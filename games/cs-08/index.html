@@ -71,18 +71,17 @@
 
       const isoUrl = URL.createObjectURL(new Blob(isoBlobs));
 
-      window.EJS_player      = '#game';
-      window.EJS_core        = 'psp';
-      window.EJS_gameUrl     = isoUrl;
-      window.EJS_pathtodata  = 'https://cdn.emulatorjs.org/stable/data/';
-      window.EJS_threads     = true;
-      window.EJS_onGameStart = function() {
-        document.getElementById('cs-loading').style.display = 'none';
-      };
+      window.EJS_player     = '#game';
+      window.EJS_core       = 'psp';
+      window.EJS_gameUrl    = isoUrl;
+      window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+      window.EJS_threads    = false;
 
       const s = document.createElement('script');
       s.src = 'https://cdn.emulatorjs.org/stable/data/loader.js';
-      s.onload = function() {};
+      s.onload = function() {
+        document.getElementById('cs-loading').style.display = 'none';
+      };
       s.onerror = function() { status.textContent = 'Failed to load emulator.'; bar.style.background = '#c00'; };
       document.head.appendChild(s);
     } catch(e) {
