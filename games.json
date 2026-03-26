@@ -19,7 +19,8 @@
   },
   {
     "name": "Apes Vs Helium",
-    "url": "https://storage.googleapis.com/sur_adam/Games/AVH/index.html",
-    "thumbnail": "games/apes-vs-helium-thumb.webp"
+    "folder": "games/apes-vs-helium",
+    "file": "index.html",
+    "thumbnail": "games/apes-vs-helium/thumbnail.webp"
   }
 ]
