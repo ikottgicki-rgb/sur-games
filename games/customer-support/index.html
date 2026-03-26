@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <title>Customer Support</title>
+  <style>
+    html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; background-color: #1f1f20; }
+    canvas { width: 960px; height: 540px; background: #1f1f20; }
+    #cs-loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; background: #1f1f20; z-index: 9999;
+      color: #fff; font-family: sans-serif; gap: 16px;
+    }
+    #cs-bar-wrap { width: 300px; height: 12px; background: #333; border-radius: 6px; overflow: hidden; }
+    #cs-bar { height: 100%; width: 0%; background: #4a90d9; border-radius: 6px; transition: width 0.2s; }
+  </style>
+</head>
+<body>
+  <div id="cs-loading">
+    <div id="cs-status">Loading...</div>
+    <div id="cs-bar-wrap"><div id="cs-bar"></div></div>
+  </div>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <script>
+  (async () => {
+    const REPO      = 'ikottgicki-rgb/sur-games';
+    const BASE_PATH = 'games/customer-support';
+    const status    = document.getElementById('cs-status');
+    const bar       = document.getElementById('cs-bar');
+
+    let sha = 'main';
+    try {
+      const shaRes = await fetch('https://api.github.com/repos/' + REPO + '/commits?path=' + BASE_PATH + '&per_page=1&t=' + Date.now());
+      if (shaRes.ok) {
+        const shaJson = await shaRes.json();
+        if (shaJson[0] && shaJson[0].sha) sha = shaJson[0].sha;
+      }
+    } catch(e) {}
+
+    const CDN = 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + sha + '/' + BASE_PATH + '/';
+
+    async function fetchPart(url, onProgress) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
+      const total = parseInt(res.headers.get('content-length') || '0');
+      const reader = res.body.getReader();
+      const chunks = [];
+      let loaded = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        if (total && onProgress) onProgress(loaded / total);
+      }
+      return new Blob(chunks);
+    }
+
+    try {
+      const dataParts = ['Build/CustomerSupportPort.data.part1', 'Build/CustomerSupportPort.data.part2'];
+      const wasmParts = ['Build/CustomerSupportPort.wasm.part1',  'Build/CustomerSupportPort.wasm.part2'];
+      const totalParts = dataParts.length + wasmParts.length;
+      let partsDone = 0;
+
+      const dataBlobs = [];
+      for (let i = 0; i < dataParts.length; i++) {
+        status.textContent = 'Downloading data (' + (i + 1) + '/' + dataParts.length + ')...';
+        const blob = await fetchPart(CDN + dataParts[i], p => {
+          bar.style.width = ((partsDone + p) / totalParts * 100) + '%';
+        });
+        dataBlobs.push(blob);
+        partsDone++;
+        bar.style.width = (partsDone / totalParts * 100) + '%';
+      }
+
+      const wasmBlobs = [];
+      for (let i = 0; i < wasmParts.length; i++) {
+        status.textContent = 'Downloading wasm (' + (i + 1) + '/' + wasmParts.length + ')...';
+        const blob = await fetchPart(CDN + wasmParts[i], p => {
+          bar.style.width = ((partsDone + p) / totalParts * 100) + '%';
+        });
+        wasmBlobs.push(blob);
+        partsDone++;
+        bar.style.width = (partsDone / totalParts * 100) + '%';
+      }
+
+      bar.style.width = '100%';
+      status.textContent = 'Preparing game...';
+
+      const dataUrl      = URL.createObjectURL(new Blob(dataBlobs));
+      const wasmUrl      = URL.createObjectURL(new Blob(wasmBlobs));
+      const frameworkUrl = CDN + 'Build/CustomerSupportPort.framework.js';
+      const loaderUrl    = CDN + 'Build/CustomerSupportPort.loader.js';
+
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = loaderUrl;
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+
+      document.getElementById('cs-loading').style.display = 'none';
+
+      createUnityInstance(document.querySelector('#unity-canvas'), {
+        arguments:          [],
+        dataUrl:            dataUrl,
+        frameworkUrl:       frameworkUrl,
+        codeUrl:            wasmUrl,
+        streamingAssetsUrl: 'StreamingAssets',
+        companyName:        'DefaultCompany',
+        productName:        'ExportedProject',
+        productVersion:     '1.0',
+      });
+    } catch(e) {
+      status.textContent = 'Failed to load: ' + e.message;
+      bar.style.background = '#c00';
+    }
+  })();
+  </script>
+</body>
+</html>

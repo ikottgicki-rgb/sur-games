@@ -22,5 +22,29 @@
     "folder": "games/apes-vs-helium",
     "file": "index.html",
     "thumbnail": "games/apes-vs-helium/thumbnail.webp"
+  },
+  {
+    "name": "Vampire Survivors",
+    "folder": "games/vampire-survivors",
+    "file": "index.html",
+    "thumbnail": "games/vampire-survivors/thumbnail.webp"
+  },
+  {
+    "name": "Level Devil",
+    "folder": "games/level-devil",
+    "file": "index.html",
+    "thumbnail": "games/level-devil/thumbnail.webp"
+  },
+  {
+    "name": "Counter-Strike 0.8",
+    "folder": "games/cs-08",
+    "file": "index.html",
+    "thumbnail": "games/cs-08/thumbnail.webp"
+  },
+  {
+    "name": "Customer Support",
+    "folder": "games/customer-support",
+    "file": "index.html",
+    "thumbnail": "games/customer-support/thumbnail.webp"
   }
 ]
