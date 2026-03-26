@@ -16,5 +16,10 @@
     "folder": "games/balatro",
     "file": "index.html",
     "thumbnail": "thumbnail.jpg"
+  },
+  {
+    "name": "Apes Vs Helium",
+    "url": "https://storage.googleapis.com/sur_adam/Games/AVH/index.html",
+    "thumbnail": "games/apes-vs-helium-thumb.webp"
   }
 ]
