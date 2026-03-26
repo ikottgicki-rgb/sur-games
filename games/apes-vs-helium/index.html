@@ -4,9 +4,6 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Unity WebGL Player | Apes vs Helium</title>
-  <base href="https://cdn.jsdelivr.net/gh/ikottgicki-rgb/sur-games@main/games/apes-vs-helium/">
-  <link rel="stylesheet" href="TemplateData/style.css">
-  <script src="TemplateData/UnityProgress.js"></script>
   <style>
     body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#231F20; }
     #unityContainer { width:100vw !important; height:100vh !important; }
@@ -21,15 +18,29 @@
 </head>
 <body>
   <div id="avh-loading">
-    <div id="avh-status">Downloading game data...</div>
+    <div id="avh-status">Loading...</div>
     <div id="avh-bar-wrap"><div id="avh-bar"></div></div>
   </div>
   <div id="unityContainer"></div>
   <script>
   (async () => {
-    const RAW = 'https://raw.githubusercontent.com/ikottgicki-rgb/sur-games/main/games/apes-vs-helium/';
-    const status = document.getElementById('avh-status');
-    const bar    = document.getElementById('avh-bar');
+    const REPO      = 'ikottgicki-rgb/sur-games';
+    const BASE_PATH = 'games/apes-vs-helium';
+    const status    = document.getElementById('avh-status');
+    const bar       = document.getElementById('avh-bar');
+
+    // Get latest commit SHA so jsDelivr serves fresh files, not a stale cached version.
+    // Same trick as gn-math uses for zones.json.
+    let sha = 'main';
+    try {
+      const shaRes = await fetch('https://api.github.com/repos/' + REPO + '/commits?path=' + BASE_PATH + '&per_page=1&t=' + Date.now());
+      if (shaRes.ok) {
+        const shaJson = await shaRes.json();
+        if (shaJson[0] && shaJson[0].sha) sha = shaJson[0].sha;
+      }
+    } catch(e) {}
+
+    const CDN = 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + sha + '/' + BASE_PATH + '/';
 
     async function fetchPart(url, onProgress) {
       const res = await fetch(url);
@@ -49,30 +60,47 @@
     }
 
     try {
-      // Download data parts from GitHub raw (jsDelivr 403s files >20MB)
-      const dataParts = ['Build/AVHPort.data.unityweb.part1', 'Build/AVHPort.data.unityweb.part2'];
+      const dataParts = [
+        'Build/AVHPort.data.unityweb.part1',
+        'Build/AVHPort.data.unityweb.part2',
+        'Build/AVHPort.data.unityweb.part3',
+      ];
+      const wasmParts = [
+        'Build/AVHPort.wasm.code.unityweb.part1',
+        'Build/AVHPort.wasm.code.unityweb.part2',
+      ];
+      const totalParts = dataParts.length + wasmParts.length;
+      let partsDone = 0;
+
       const dataBlobs = [];
       for (let i = 0; i < dataParts.length; i++) {
-        status.textContent = 'Downloading data (' + (i+1) + '/' + dataParts.length + ')...';
-        const blob = await fetchPart(RAW + dataParts[i], p => {
-          bar.style.width = ((i + p) / dataParts.length * 80) + '%';
+        status.textContent = 'Downloading data (' + (i + 1) + '/' + dataParts.length + ')...';
+        const blob = await fetchPart(CDN + dataParts[i], p => {
+          bar.style.width = ((partsDone + p) / totalParts * 100) + '%';
         });
         dataBlobs.push(blob);
+        partsDone++;
+        bar.style.width = (partsDone / totalParts * 100) + '%';
       }
 
-      // Download wasm code from GitHub raw too (also >20MB)
-      status.textContent = 'Downloading wasm...';
-      const wasmBlob = await fetchPart(RAW + 'Build/AVHPort.wasm.code.unityweb', p => {
-        bar.style.width = (80 + p * 20) + '%';
-      });
+      const wasmBlobs = [];
+      for (let i = 0; i < wasmParts.length; i++) {
+        status.textContent = 'Downloading wasm (' + (i + 1) + '/' + wasmParts.length + ')...';
+        const blob = await fetchPart(CDN + wasmParts[i], p => {
+          bar.style.width = ((partsDone + p) / totalParts * 100) + '%';
+        });
+        wasmBlobs.push(blob);
+        partsDone++;
+        bar.style.width = (partsDone / totalParts * 100) + '%';
+      }
 
       bar.style.width = '100%';
       status.textContent = 'Preparing game...';
 
-      const dataUrl  = URL.createObjectURL(new Blob(dataBlobs));
-      const wasmUrl  = URL.createObjectURL(wasmBlob);
+      const dataUrl = URL.createObjectURL(new Blob(dataBlobs));
+      const wasmUrl = URL.createObjectURL(new Blob(wasmBlobs));
 
-      // Patch the build config so UnityLoader uses our blob URLs
+      // Intercept fetch so Unity gets our merged blob URLs instead of the split filenames
       const origFetch = window.fetch.bind ? window.fetch.bind(window) : window.fetch;
       window.fetch = function(resource, opts) {
         const url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
@@ -81,7 +109,8 @@
         return origFetch(resource, opts);
       };
 
-      // Also patch XHR for loaders that use XHR instead of fetch
+      // Intercept XHR at instance level — proxyIIFE replaces window.XMLHttpRequest entirely
+      // so patching the prototype has no effect; must wrap the already-replaced constructor
       const OrigXHR = window.XMLHttpRequest;
       window.XMLHttpRequest = function() {
         const xhr = new OrigXHR();
@@ -95,18 +124,33 @@
       };
       window.XMLHttpRequest.prototype = OrigXHR.prototype;
 
-      // Load UnityLoader and start
+      // Set base URL so relative paths in UnityLoader resolve against the SHA-pinned CDN
+      const base = document.createElement('base');
+      base.href = CDN;
+      document.head.prepend(base);
+
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = CDN + 'TemplateData/style.css';
+      document.head.appendChild(link);
+
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = 'Build/UnityLoader.js';
-        s.onload = resolve;
-        s.onerror = reject;
+        s.src = CDN + 'TemplateData/UnityProgress.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = CDN + 'Build/UnityLoader.js';
+        s.onload = resolve; s.onerror = reject;
         document.head.appendChild(s);
       });
 
       document.getElementById('avh-loading').style.display = 'none';
-      UnityLoader.instantiate('unityContainer', 'Build/AVHPort.json', {onProgress: UnityProgress});
-    } catch (e) {
+      UnityLoader.instantiate('unityContainer', CDN + 'Build/AVHPort.json', {onProgress: UnityProgress});
+    } catch(e) {
       status.textContent = 'Failed to load: ' + e.message;
       bar.style.background = '#c00';
     }
