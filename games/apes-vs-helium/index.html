@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Unity WebGL Player | Apes vs Helium</title>
+  <base href="https://cdn.jsdelivr.net/gh/ikottgicki-rgb/sur-games@main/games/apes-vs-helium/">
   <link rel="stylesheet" href="TemplateData/style.css">
   <script src="TemplateData/UnityProgress.js"></script>
   <style>
@@ -26,12 +27,13 @@
   <div id="unityContainer"></div>
   <script>
   (async () => {
+    const RAW = 'https://raw.githubusercontent.com/ikottgicki-rgb/sur-games/main/games/apes-vs-helium/';
     const status = document.getElementById('avh-status');
     const bar    = document.getElementById('avh-bar');
 
     async function fetchPart(url, onProgress) {
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed: ' + url);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
       const total = parseInt(res.headers.get('content-length') || '0');
       const reader = res.body.getReader();
       const chunks = [];
@@ -41,37 +43,59 @@
         if (done) break;
         chunks.push(value);
         loaded += value.length;
-        if (total) onProgress(loaded / total);
+        if (total && onProgress) onProgress(loaded / total);
       }
       return new Blob(chunks);
     }
 
     try {
-      const parts = ['Build/AVHPort.data.unityweb.part1', 'Build/AVHPort.data.unityweb.part2'];
-      const blobs = [];
-      for (let i = 0; i < parts.length; i++) {
-        status.textContent = 'Downloading data (' + (i+1) + '/' + parts.length + ')...';
-        const blob = await fetchPart(parts[i], p => {
-          bar.style.width = ((i + p) / parts.length * 100) + '%';
+      // Download data parts from GitHub raw (jsDelivr 403s files >20MB)
+      const dataParts = ['Build/AVHPort.data.unityweb.part1', 'Build/AVHPort.data.unityweb.part2'];
+      const dataBlobs = [];
+      for (let i = 0; i < dataParts.length; i++) {
+        status.textContent = 'Downloading data (' + (i+1) + '/' + dataParts.length + ')...';
+        const blob = await fetchPart(RAW + dataParts[i], p => {
+          bar.style.width = ((i + p) / dataParts.length * 80) + '%';
         });
-        blobs.push(blob);
+        dataBlobs.push(blob);
       }
+
+      // Download wasm code from GitHub raw too (also >20MB)
+      status.textContent = 'Downloading wasm...';
+      const wasmBlob = await fetchPart(RAW + 'Build/AVHPort.wasm.code.unityweb', p => {
+        bar.style.width = (80 + p * 20) + '%';
+      });
+
       bar.style.width = '100%';
       status.textContent = 'Preparing game...';
 
-      const dataObjectUrl = URL.createObjectURL(new Blob(blobs));
+      const dataUrl  = URL.createObjectURL(new Blob(dataBlobs));
+      const wasmUrl  = URL.createObjectURL(wasmBlob);
 
-      // Intercept XHR so UnityLoader fetches the merged blob instead of the split file
-      const origOpen = XMLHttpRequest.prototype.open;
-      XMLHttpRequest.prototype.open = function(method, url) {
-        const args = Array.from(arguments);
-        if (typeof url === 'string' && url.includes('AVHPort.data.unityweb')) {
-          args[1] = dataObjectUrl;
-        }
-        return origOpen.apply(this, args);
+      // Patch the build config so UnityLoader uses our blob URLs
+      const origFetch = window.fetch.bind ? window.fetch.bind(window) : window.fetch;
+      window.fetch = function(resource, opts) {
+        const url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
+        if (url.includes('AVHPort.data.unityweb'))      return origFetch(dataUrl, opts);
+        if (url.includes('AVHPort.wasm.code.unityweb')) return origFetch(wasmUrl, opts);
+        return origFetch(resource, opts);
       };
 
-      // Load UnityLoader.js now that XHR is patched
+      // Also patch XHR for loaders that use XHR instead of fetch
+      const OrigXHR = window.XMLHttpRequest;
+      window.XMLHttpRequest = function() {
+        const xhr = new OrigXHR();
+        const origOpen = xhr.open.bind(xhr);
+        xhr.open = function(method, url) {
+          if (typeof url === 'string' && url.includes('AVHPort.data.unityweb'))      url = dataUrl;
+          if (typeof url === 'string' && url.includes('AVHPort.wasm.code.unityweb')) url = wasmUrl;
+          return origOpen(method, url);
+        };
+        return xhr;
+      };
+      window.XMLHttpRequest.prototype = OrigXHR.prototype;
+
+      // Load UnityLoader and start
       await new Promise((resolve, reject) => {
         const s = document.createElement('script');
         s.src = 'Build/UnityLoader.js';
@@ -81,7 +105,7 @@
       });
 
       document.getElementById('avh-loading').style.display = 'none';
-      UnityLoader.instantiate("unityContainer", "Build/AVHPort.json", {onProgress: UnityProgress});
+      UnityLoader.instantiate('unityContainer', 'Build/AVHPort.json', {onProgress: UnityProgress});
     } catch (e) {
       status.textContent = 'Failed to load: ' + e.message;
       bar.style.background = '#c00';
