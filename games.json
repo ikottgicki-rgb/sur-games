@@ -3,19 +3,19 @@
     "name": "Your Only Move Is HUSTLE",
     "folder": "YOMIHustle",
     "file": "game.html",
-    "thumbnail": "thumbnail.png"
+    "thumbnail": "YOMIHustle/thumbnail.png"
   },
   {
     "name": "Cookie Clicker",
     "folder": "games/cookie-clicker",
     "file": "index.html",
-    "thumbnail": "thumbnail.png"
+    "thumbnail": "games/cookie-clicker/thumbnail.png"
   },
   {
     "name": "Balatro",
     "folder": "games/balatro",
     "file": "index.html",
-    "thumbnail": "thumbnail.jpg"
+    "thumbnail": "games/balatro/thumbnail.jpg"
   },
   {
     "name": "Apes Vs Helium",
