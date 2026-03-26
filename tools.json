@@ -1,0 +1,13 @@
+[
+  { "name": "exthang3r",  "folder": "tools/exthang3r",  "file": "index.html", "thumbnail": "tools/thumbnails/exthang3r.png" },
+  { "name": "extprinter", "folder": "tools/extprinter", "file": "index.html", "thumbnail": "tools/thumbnails/extprinter.png" },
+  { "name": "aerogel",    "folder": "tools/aerogel",    "file": "index.html", "thumbnail": "tools/thumbnails/aerogel.webp" },
+  { "name": "auk",        "folder": "tools/auk",        "file": "index.html", "thumbnail": "tools/thumbnails/auk.png" },
+  { "name": "gdg",        "folder": "tools/gdg",        "file": "index.html", "thumbnail": "tools/thumbnails/gdg.png" },
+  { "name": "sh1mmer",   "folder": "tools/sh1mmer",    "file": "index.html", "thumbnail": "tools/thumbnails/sh1mmer.png" },
+  { "name": "Ruffle",     "folder": "tools/ruffle",     "file": "index.html", "thumbnail": "tools/thumbnails/ruffle.png" },
+  { "name": "voxiles",    "folder": "tools/voxiles",    "file": "index.html", "thumbnail": "tools/thumbnails/voxiles.png" },
+  { "name": "N64",        "folder": "tools/n64",        "file": "index.html", "thumbnail": "tools/thumbnails/n64.webp" },
+  { "name": "Tierlist",   "folder": "tools/tierlist",   "file": "index.html", "thumbnail": "tools/thumbnails/tierlist.png" },
+  { "name": "kacinema",   "folder": "tools/kacinema",   "file": "index.html", "thumbnail": "tools/thumbnails/kacinema.png" }
+]

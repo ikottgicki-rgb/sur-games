@@ -4,5 +4,17 @@
     "folder": "YOMIHustle",
     "file": "game.html",
     "thumbnail": "thumbnail.png"
+  },
+  {
+    "name": "Cookie Clicker",
+    "folder": "games/cookie-clicker",
+    "file": "index.html",
+    "thumbnail": "thumbnail.png"
+  },
+  {
+    "name": "Balatro",
+    "folder": "games/balatro",
+    "file": "index.html",
+    "thumbnail": "thumbnail.jpg"
   }
 ]
