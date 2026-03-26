@@ -36,12 +36,6 @@
     "thumbnail": "games/level-devil/thumbnail.webp"
   },
   {
-    "name": "Counter-Strike 0.8",
-    "folder": "games/cs-08",
-    "file": "index.html",
-    "thumbnail": "games/cs-08/thumbnail.webp"
-  },
-  {
     "name": "Customer Support",
     "folder": "games/customer-support",
     "file": "index.html",
