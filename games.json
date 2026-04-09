@@ -40,5 +40,11 @@
     "folder": "games/customer-support",
     "file": "index.html",
     "thumbnail": "games/customer-support/thumbnail.webp"
+  },
+  {
+    "name": "Stardew Valley",
+    "folder": "games/stardew",
+    "file": "index.html",
+    "thumbnail": "games/stardew/thumbnail.jpg"
   }
 ]
